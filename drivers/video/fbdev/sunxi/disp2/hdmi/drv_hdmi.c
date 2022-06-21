@@ -1089,11 +1089,18 @@ static ssize_t hdmi_dump_store(struct device *dev,
 	static long long val;
 	long long reg, num, i = 0;
 	unsigned char value_r[128];
+	long long hdmi_range = 0x100000;
 	s32 ret = -1;
 
 	ret = kstrtoll(buf, 0, &val);
 	reg = (val >> 8);
 	num = val & 0xff;
+
+	if (reg % 4 || reg < 0 || (reg + 4 * num > hdmi_range)) {
+		pr_alert("register address is out of range\n");
+		return -EINVAL;
+	}
+
 	pr_alert("\n");
 	pr_alert("read:start add:0x%llx,count:0x%llx\n", reg, num);
 	do {
@@ -1118,6 +1125,7 @@ static ssize_t hdmi_write_store(struct device *dev,
 	static long long val;
 	long long reg;
 	long long value_w;
+	long long hdmi_range = 0x100000;
 	s32 ret = -1;
 
 	ret = kstrtoll(buf, 0, &val);
@@ -1128,6 +1136,12 @@ static ssize_t hdmi_write_store(struct device *dev,
 
 	reg = (val >> 16);
 	value_w =  val & 0xFFFF;
+
+	if (reg % 4 || reg < 0 || (reg + 0x4 > hdmi_range)) {
+		pr_alert("register address is out of range\n");
+		return -EINVAL;
+	}
+
 	bsp_hdmi_write(reg, value_w);
 	pr_alert("write 0x%llx to reg:0x%llx\n", value_w, reg);
 	return count;

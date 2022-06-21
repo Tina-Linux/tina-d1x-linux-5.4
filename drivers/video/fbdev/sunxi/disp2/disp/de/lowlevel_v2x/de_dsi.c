@@ -699,7 +699,9 @@ __s32 dsi_dphy_open(__u32 sel, struct disp_panel_para *panel)
 {
 	u32 i = 0;
 	u32 lane_den = 0;
-	void *ic_ver_addr;
+#ifdef CONFIG_ARCH_SUN50IW10
+	unsigned int ic_ver = 0;
+#endif
 
 	for (i = 0; i < panel->lcd_dsi_lane; i++)
 		lane_den |= (1 << i);
@@ -742,19 +744,12 @@ __s32 dsi_dphy_open(__u32 sel, struct disp_panel_para *panel)
 	dphy_dev[sel]->dphy_ana3.bits.endiv = 1;
 	dphy_dev[sel]->dphy_ana2.bits.enck_cpu = 1;
 	dphy_dev[sel]->dphy_ana1.bits.reg_vttmode = 1;
-	ic_ver_addr = NULL;
 #ifdef CONFIG_ARCH_SUN50IW10
-	ic_ver_addr = ioremap(0x03000024, 4);
-	if (ic_ver_addr) {
-		i = readl(ic_ver_addr);
-		if ((i & 0x00000007) > 0)
-			dphy_dev[sel]->dphy_ana1.dwval |= 0x00000020;
-		else
-			dphy_dev[sel]->dphy_ana1.dwval &= 0xffffffDf;
-	} else
+	ic_ver = sunxi_get_soc_ver();
+	if (ic_ver > 0)
 		dphy_dev[sel]->dphy_ana1.dwval |= 0x00000020;
-
-	iounmap(ic_ver_addr);
+	else
+		dphy_dev[sel]->dphy_ana1.dwval &= 0xffffffDf;
 #endif
 	dphy_dev[sel]->dphy_ana2.bits.enp2s_cpu = lane_den;
 
@@ -945,7 +940,7 @@ static s32 dsi_basic_cfg(u32 sel, struct disp_panel_para *panel)
 		    dsi_start_delay;
 		dsi_dev[sel]->dsi_basic_ctl1.bits.video_precision_mode_align =
 		    1;
-		dsi_dev[sel]->dsi_basic_ctl1.bits.video_frame_start = 0;
+		dsi_dev[sel]->dsi_basic_ctl1.bits.video_frame_start = 1;
 		dsi_dev[sel]->dsi_trans_start.bits.trans_start_set = 10;
 		dsi_dev[sel]->dsi_trans_zero.bits.hs_zero_reduce_set = 0;
 		dsi_dev[sel]->dsi_basic_ctl1.bits.dsi_mode = 1;

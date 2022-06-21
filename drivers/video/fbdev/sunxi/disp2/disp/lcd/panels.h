@@ -167,6 +167,9 @@ extern struct __lcd_panel K101_IM2BYL02_L_800X1280_mipi_panel;
 #ifdef CONFIG_LCD_SUPPORT_K080_IM2HYL802R_800X1280
 extern struct __lcd_panel K080_IM2HYL802R_800X1280_mipi_panel;
 #endif
+#ifdef CONFIG_LCD_SUPPORT_NT35510_MIPI
+extern struct __lcd_panel nt35510_panel;
+#endif
 
 extern struct __lcd_panel super_lcd_panel;
 

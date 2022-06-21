@@ -58,9 +58,15 @@ enum hdmi_ioctl_cmd {
 	CMD_NUM,
 };
 
+struct hdmi_power {
+	char name[POWER_NAME];
+	struct regulator *regu;
+};
+
 /**
  * @short Main structures to instantiate the driver
  */
+
 struct hdmi_tx_drv {
 	struct platform_device		*pdev;
 	/* Device node */
@@ -82,7 +88,7 @@ struct hdmi_tx_drv {
 * in order to enhance the ability of reading edid
 */
 	unsigned int			ddc_ctrl_en;
-	struct gpio_config              ddc_ctrl;
+	unsigned int                    ddc_ctrl_gpio;
 
 	u32				cec_super_standby;
 	u32				cec_support;
@@ -90,8 +96,7 @@ struct hdmi_tx_drv {
 	int				is_cts;
 
 	u8				support_hdcp;
-
-	char				power[POWER_CNT][POWER_NAME];
+	struct hdmi_power		power[POWER_CNT];
 	struct regulator		*regulator[POWER_CNT];
 	u32				power_count;
 

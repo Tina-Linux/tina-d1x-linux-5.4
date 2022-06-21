@@ -1664,6 +1664,7 @@ void disp_ion_free(void *virt_addr, void *phys_addr, u32 num_bytes)
 			     ((unsigned long)virt_addr))) {
 				__disp_ion_free_coherent(mem);
 				__list_del_entry(&(ion_node->node));
+				kfree(ion_node);
 				found = true;
 				break;
 			}
@@ -2465,7 +2466,7 @@ static int disp_mem_request(int sel, u32 size)
 {
 
 #if IS_ENABLED(CONFIG_ION)
-	if (sel >= DISP_MEM_NUM || !size) {
+	if (sel >= DISP_MEM_NUM || sel < 0 || !size) {
 		__wrn("invalid param\n");
 		return -EINVAL;
 	}
@@ -2544,6 +2545,11 @@ static int disp_mem_request(int sel, u32 size)
 
 static int disp_mem_release(int sel)
 {
+	if (sel >= DISP_MEM_NUM || sel < 0) {
+		__wrn("invalid param\n");
+		return -EINVAL;
+	}
+
 #if IS_ENABLED(CONFIG_ION)
 	if (!g_disp_mm[sel].info_base) {
 		__wrn("invalid param\n");
@@ -3822,6 +3828,17 @@ handle_cmd:
 		{
 			s32 i = 0;
 			struct area_info area;
+			const unsigned int lyr_cfg_size = ARRAY_SIZE(lyr_cfg);
+
+			if (IS_ERR_OR_NULL((void __user *)ubuffer[3])) {
+				__wrn("incoming pointer of user is ERR or NULL");
+				return -EFAULT;
+			}
+
+			if (ubuffer[1] == 0 || ubuffer[1] > lyr_cfg_size) {
+				__wrn("layer number need to be set from 1 to %d\n", lyr_cfg_size);
+				return -EFAULT;
+			}
 
 			if (!eink_manager) {
 				pr_err("there is no eink manager!\n");
@@ -3858,6 +3875,17 @@ handle_cmd:
 		{
 			s32 i = 0;
 			struct area_info area;
+			const unsigned int lyr_cfg_size = ARRAY_SIZE(lyr_cfg2);
+
+			if (IS_ERR_OR_NULL((void __user *)ubuffer[3])) {
+				__wrn("incoming pointer of user is ERR or NULL");
+				return -EFAULT;
+			}
+
+			if (ubuffer[1] == 0 || ubuffer[1] > lyr_cfg_size) {
+				__wrn("layer number need to be set from 1 to %d\n", lyr_cfg_size);
+				return -EFAULT;
+			}
 
 			if (!eink_manager) {
 				pr_err("there is no eink manager!\n");
@@ -3957,12 +3985,16 @@ handle_cmd:
 
 		mutex_lock(&g_disp_drv.mlock);
 
-		if (ubuffer[2] > lyr_cfg_size) {
-			__wrn("Total layer number is %d\n", lyr_cfg_size);
+		if (IS_ERR_OR_NULL((void __user *)ubuffer[1])) {
+			__wrn("incoming pointer of user is ERR or NULL");
 			mutex_unlock(&g_disp_drv.mlock);
 			return -EFAULT;
 		}
-
+		if (ubuffer[2] == 0 || ubuffer[2] > lyr_cfg_size) {
+			__wrn("layer number need to be set from 1 to %d\n", lyr_cfg_size);
+			mutex_unlock(&g_disp_drv.mlock);
+			return -EFAULT;
+		}
 		if (copy_from_user(lyr_cfg,
 			(void __user *)ubuffer[1],
 			sizeof(struct disp_layer_config) * ubuffer[2]))	{
@@ -3989,6 +4021,16 @@ handle_cmd:
 
 	case DISP_LAYER_GET_CONFIG:
 	{
+		const unsigned int lyr_cfg_size = ARRAY_SIZE(lyr_cfg);
+
+		if (IS_ERR_OR_NULL((void __user *)ubuffer[1])) {
+			__wrn("incoming pointer of user is ERR or NULL");
+			return -EFAULT;
+		}
+		if (ubuffer[2] == 0 || ubuffer[2] > lyr_cfg_size) {
+			__wrn("layer number need to be set from 1 to %d\n", lyr_cfg_size);
+			return -EFAULT;
+		}
 		if (copy_from_user(lyr_cfg,
 			(void __user *)ubuffer[1],
 			sizeof(struct disp_layer_config) * ubuffer[2]))	{
@@ -4014,12 +4056,26 @@ handle_cmd:
 		unsigned int i = 0;
 		const unsigned int lyr_cfg_size =
 			ARRAY_SIZE(lyr_cfg2);
+		unsigned int pLyr_cfg2_size;
 
 		/* adapt to multi thread call in case of disp 0 & 1 work together*/
-		if (ubuffer[0] == 0)
+		if (ubuffer[0] == 0) {
 			pLyr_cfg2 = lyr_cfg2;
-		else
+			pLyr_cfg2_size = ARRAY_SIZE(lyr_cfg2);
+		} else {
 			pLyr_cfg2 = lyr_cfg2_1;
+			pLyr_cfg2_size = ARRAY_SIZE(lyr_cfg2_1);
+		}
+
+		if (IS_ERR_OR_NULL((void __user *)ubuffer[1])) {
+			__wrn("incoming pointer of user is ERR or NULL");
+			return -EFAULT;
+		}
+
+		if (ubuffer[2] == 0 || ubuffer[2] > pLyr_cfg2_size) {
+			__wrn("layer number need to be set from 1 to %d\n", pLyr_cfg2_size);
+			return -EFAULT;
+		}
 
 		if (copy_from_user(pLyr_cfg2,
 		    (void __user *)ubuffer[1],
@@ -4051,12 +4107,26 @@ handle_cmd:
 		unsigned int i = 0;
 		const unsigned int lyr_cfg_size =
 			ARRAY_SIZE(lyr_cfg2);
+		unsigned int pLyr_cfg2_size;
 
 		/* adapt to multi thread call in case of disp 0 & 1 work together*/
-		if (ubuffer[0] == 0)
+		if (ubuffer[0] == 0) {
 			pLyr_cfg2 = lyr_cfg2;
-		else
+			pLyr_cfg2_size = ARRAY_SIZE(lyr_cfg2);
+		} else {
 			pLyr_cfg2 = lyr_cfg2_1;
+			pLyr_cfg2_size = ARRAY_SIZE(lyr_cfg2_1);
+		}
+
+		if (IS_ERR_OR_NULL((void __user *)ubuffer[1])) {
+			__wrn("incoming pointer of user is ERR or NULL");
+			return -EFAULT;
+		}
+
+		if (ubuffer[2] == 0 || ubuffer[2] > pLyr_cfg2_size) {
+			__wrn("layer number need to be set from 1 to %d\n", pLyr_cfg2_size);
+			return -EFAULT;
+		}
 
 		if (copy_from_user(pLyr_cfg2,
 		    (void __user *)ubuffer[1],
@@ -4090,6 +4160,18 @@ handle_cmd:
 
 	case DISP_LAYER_GET_CONFIG2:
 	{
+		const unsigned int lyr_cfg_size = ARRAY_SIZE(lyr_cfg2);
+
+		if (IS_ERR_OR_NULL((void __user *)ubuffer[1])) {
+			__wrn("incoming pointer of user is ERR or NULL");
+			return -EFAULT;
+		}
+
+		if (ubuffer[2] == 0 || ubuffer[2] > lyr_cfg_size) {
+			__wrn("layer number need to be set from 1 to %d\n", lyr_cfg_size);
+			return -EFAULT;
+		}
+
 		if (copy_from_user(lyr_cfg2,
 		    (void __user *)ubuffer[1],
 		    sizeof(struct disp_layer_config2) * ubuffer[2])) {
@@ -4151,6 +4233,11 @@ handle_cmd:
 		}
 	case DISP_TV_SET_GAMMA_TABLE:
 	{
+		if (IS_ERR_OR_NULL((void __user *)ubuffer[1])) {
+			__wrn("incoming pointer of user is ERR or NULL");
+			return -EFAULT;
+		}
+
 		if (dispdev && (dispdev->type == DISP_OUTPUT_TYPE_TV)) {
 			u32 *gamma_tbl = kmalloc(LCD_GAMMA_TABLE_SIZE,
 						 GFP_KERNEL | __GFP_ZERO);
@@ -4309,6 +4396,12 @@ handle_cmd:
 		{
 			struct disp_rect rect;
 
+			if (IS_ERR_OR_NULL((void __user *)ubuffer[1])) {
+				__wrn("incoming pointer of user is ERR or NULL");
+				return -EFAULT;
+			}
+
+
 			if (copy_from_user(&rect, (void __user *)ubuffer[1],
 			     sizeof(struct disp_rect))) {
 				__wrn("copy_from_user fail\n");
@@ -4338,6 +4431,11 @@ handle_cmd:
 		{
 			struct disp_capture_info info;
 
+			if (IS_ERR_OR_NULL((void __user *)ubuffer[1])) {
+				__wrn("incoming pointer of user is ERR or NULL");
+				return -EFAULT;
+			}
+
 			if (copy_from_user(&info, (void __user *)ubuffer[1],
 			     sizeof(struct disp_capture_info))) {
 				__wrn("copy_from_user fail\n");
@@ -4350,6 +4448,11 @@ handle_cmd:
 	case DISP_CAPTURE_COMMIT2:
 	{
 		struct disp_capture_info2 info;
+
+		if (IS_ERR_OR_NULL((void __user *)ubuffer[1])) {
+			__wrn("incoming pointer of user is ERR or NULL");
+			return -EFAULT;
+		}
 
 		if (copy_from_user(&info,
 				   (void __user *)ubuffer[1],
@@ -4372,11 +4475,25 @@ handle_cmd:
 		break;
 
 	case DISP_MEM_GETADR:
+	{
+		if (ubuffer[0] >= DISP_MEM_NUM) {
+			__wrn("invalid param\n");
+			ret = -EINVAL;
+			break;
+		}
+
 		return g_disp_mm[ubuffer[0]].mem_start;
+	}
+
 #if defined(SUPPORT_VDPO)
 	case DISP_VDPO_SET_CONFIG:
 		{
 			struct disp_vdpo_config vdpo_para;
+
+			if (IS_ERR_OR_NULL((void __user *)ubuffer[1])) {
+				__wrn("incoming pointer of user is ERR or NULL");
+				return -EFAULT;
+			}
 
 			if (copy_from_user(
 				&vdpo_para, (void __user *)ubuffer[1],
@@ -4483,6 +4600,11 @@ handle_cmd:
 		{
 
 			struct disp_ksc_info ksc;
+
+			if (IS_ERR_OR_NULL((void __user *)ubuffer[1])) {
+				__wrn("incoming pointer of user is ERR or NULL");
+				return -EFAULT;
+			}
 
 			if (copy_from_user(&ksc, (void __user *)ubuffer[1],
 					   sizeof(struct disp_ksc_info))) {

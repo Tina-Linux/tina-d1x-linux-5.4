@@ -667,11 +667,10 @@ int de_rtmx_set_lay_cfg(unsigned int sel, unsigned int chno, unsigned int layno,
 
 		de200_rtmx[sel].lbc_ovl[chno]->lbc_seg.bits.pitch = cfg->lbc_info.pitch & 0xFFFF;
 		de200_rtmx[sel].lbc_ovl[chno]->lbc_seg.bits.seg_bit = cfg->lbc_info.seg_bit & 0xFFFF;
-
+		/*
 		de200_rtmx[sel].lbc_ovl[chno]->lbc_lay_coor.bits.ovl_coorx = cfg->layer.x;
 		de200_rtmx[sel].lbc_ovl[chno]->lbc_lay_coor.bits.ovl_coory = cfg->layer.y;
-
-
+		*/
 		lbc_block[sel][chno].dirty = 1;
 		return 0;
 	}

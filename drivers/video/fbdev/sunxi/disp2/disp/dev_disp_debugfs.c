@@ -830,6 +830,12 @@ static ssize_t dispdbg_debug_level_write(struct file *file, const char __user *b
 				  size_t count, loff_t *ppos)
 {
 	char tmp_buf[20] = {0};
+	const unsigned int tmp_buf_size = ARRAY_SIZE(tmp_buf);
+
+	if (count == 0 || count > tmp_buf_size) {
+		pr_warn("input length needs to be set from 1 to %d\n", tmp_buf_size);
+		return 0;
+	}
 
 	if (copy_from_user(tmp_buf, buf, count)) {
 		pr_warn("copy_from_user fail\n");
